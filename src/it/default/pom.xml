@@ -17,6 +17,7 @@
       <plugin>
         <groupId>com.jteigen</groupId>
         <artifactId>maven-scalatest-plugin</artifactId>
+        <version>testing</version>
         <executions>
           <execution>
             <goals>
