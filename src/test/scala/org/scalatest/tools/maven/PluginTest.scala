@@ -15,7 +15,7 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers {
 
     config should containSlice("-p", testOutputDirectory + " " + outputDirectory)
     config should contain("-o")
-    config should containSlice("-r", "org.scalatest.tools.maven.MavenReporter")
+    config should containSlice("-r", "org.scalatest.tools.maven.FailReporter")
     config should have length (5)
   }
 
@@ -83,7 +83,7 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers {
     val mojo = new TestMojo
     mojo.testOutputDirectory = new File(testOutputDirectory)
     mojo.outputDirectory = new File(outputDirectory)
-    mojo.reportsDirectory = new File(reportsDirectory)
+    mojo.scalaTestReportsDirectory = new File(reportsDirectory)
     m(mojo)
     mojo.configuration
   }

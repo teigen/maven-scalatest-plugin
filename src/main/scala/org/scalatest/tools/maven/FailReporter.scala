@@ -1,7 +1,7 @@
 package org.scalatest.tools.maven
 
 
-class MavenReporter extends Reporter {
+class FailReporter extends Reporter {
   override def testFailed(r: Report) {
     Result.fail()
   }

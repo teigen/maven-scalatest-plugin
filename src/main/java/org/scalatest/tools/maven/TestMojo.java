@@ -23,7 +23,13 @@ public class TestMojo extends AbstractScalaTestMojo {
      * @parameter expression="${project.build.directory}/scalatest-reports"
      * @required
      */
-    File reportsDirectory;
+    File scalaTestReportsDirectory;
+
+    /**
+     * @parameter expression="${project.build.directory}/surefire-reports"
+     * @required
+     */
+    File surefireReportsDirectory;
 
     /**
      * Set this to 'true' to skip running tests
@@ -40,6 +46,11 @@ public class TestMojo extends AbstractScalaTestMojo {
      * @parameter
      */
     String[] fileReporters;
+
+    /**
+     * @parameter expression="${surefireReports}" default-value="true"
+     */
+    boolean surefireReports;
 
     /**
      * configures the standard out reporter with the reporter configuration characters
@@ -71,15 +82,23 @@ public class TestMojo extends AbstractScalaTestMojo {
         if (skipTests) {
             getLog().info("Skipping tests!");
         } else {
-            if (fileReporters != null && !reportsDirectory.exists()) {
-                if (!reportsDirectory.mkdirs()) {
-                    throw new MojoExecutionException("Error creating " + reportsDirectory);
-                }
+            if(fileReporters != null){
+                create(scalaTestReportsDirectory);
+            }
+            if(surefireReports){
+                SurefireReporterConfig.reportsDirectory = surefireReportsDirectory;
+                create(surefireReportsDirectory);
             }
             runScalaTest();
             if (Result.isFail()) {
                 throw new MojoFailureException("There are test failures");
             }
+        }
+    }
+
+    private void create(File directory) throws MojoExecutionException {
+        if(!directory.exists() && !directory.mkdirs()){
+            throw new MojoExecutionException("Cannot create " + directory);
         }
     }
 
@@ -122,7 +141,10 @@ public class TestMojo extends AbstractScalaTestMojo {
         if (reporters != null) {
             parts.addAll(Arrays.asList(reporters));
         }
-        parts.add(MavenReporter.class.getName());
+        parts.add(FailReporter.class.getName());
+        if(surefireReports){
+            parts.add(SurefireReporter.class.getName());
+        }
 
         List<String> args = new ArrayList<String>();
         for (String reporter : parts) {
@@ -145,13 +167,14 @@ public class TestMojo extends AbstractScalaTestMojo {
                 String[] split = reporter.split("\\s");
                 if (split.length == 1) {
                     args.add("-f");
-                    args.add(new File(reportsDirectory, split[0]).getAbsolutePath());
+                    args.add(new File(scalaTestReportsDirectory, split[0]).getAbsolutePath());
                 } else {
                     args.add("-f" + split[0]);
-                    args.add(new File(reportsDirectory, split[1]).getAbsolutePath());
+                    args.add(new File(scalaTestReportsDirectory, split[1]).getAbsolutePath());
                 }
             }
         }
         return args;
     }
+
 }
