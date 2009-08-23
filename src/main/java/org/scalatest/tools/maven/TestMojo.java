@@ -4,7 +4,6 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 
 import java.io.File;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -78,19 +77,9 @@ public class TestMojo extends AbstractScalaTestMojo {
                 }
             }
             runScalaTest();
-            if (isFail()) {
+            if (Result.isFail()) {
                 throw new MojoFailureException("There are test failures");
             }
-        }
-    }
-
-    private boolean isFail() throws MojoExecutionException {
-        try {
-            Class<?> result = getClass("org.scalatest.tools.maven.Result");
-            Method isFail = result.getMethod("isFail");
-            return (Boolean) isFail.invoke(null);
-        } catch (Exception e) {
-            throw new MojoExecutionException("error", e);
         }
     }
 
@@ -133,7 +122,7 @@ public class TestMojo extends AbstractScalaTestMojo {
         if (reporters != null) {
             parts.addAll(Arrays.asList(reporters));
         }
-        parts.add("org.scalatest.tools.maven.MavenReporter");
+        parts.add(MavenReporter.class.getName());
 
         List<String> args = new ArrayList<String>();
         for (String reporter : parts) {

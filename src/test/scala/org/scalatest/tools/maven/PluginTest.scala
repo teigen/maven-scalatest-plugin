@@ -7,15 +7,15 @@ import matchers.ShouldMatchers
 class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers {
 
   val testOutputDirectory = File.createTempFile("scala", "test").getAbsolutePath
+  val outputDirectory = File.createTempFile("scala", "test").getAbsolutePath
   val reportsDirectory = File.createTempFile("scala", "test").getAbsolutePath
 
   def testDefault {
     val config = configure(_ => ())
 
-    config should containSlice("-p", testOutputDirectory)
+    config should containSlice("-p", testOutputDirectory + " " + outputDirectory)
     config should contain("-o")
     config should containSlice("-r", "org.scalatest.tools.maven.MavenReporter")
-
     config should have length (5)
   }
 
@@ -32,7 +32,7 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers {
   }
 
   def testRunpath {
-    configure(_.additionalRunpaths = Array("http://foo.com/my.jar", "/some/where")) should containCompoundArgs("-p", testOutputDirectory, "http://foo.com/my.jar", "/some/where")
+    configure(_.additionalRunpaths = Array("http://foo.com/my.jar", "/some/where")) should containCompoundArgs("-p", testOutputDirectory, outputDirectory, "http://foo.com/my.jar", "/some/where")
   }
 
   def testFileReporters {
@@ -82,6 +82,7 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers {
   def configure(m: TestMojo => Unit) = {
     val mojo = new TestMojo
     mojo.testOutputDirectory = new File(testOutputDirectory)
+    mojo.outputDirectory = new File(outputDirectory)
     mojo.reportsDirectory = new File(reportsDirectory)
     m(mojo)
     mojo.configuration
@@ -90,8 +91,9 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers {
   def testGui {
     val mojo = new GuiMojo
     mojo.testOutputDirectory = new File(testOutputDirectory)
+    mojo.outputDirectory = new File(outputDirectory)
     mojo.configuration should contain ("-g")
-    mojo.configuration should containSlice("-p", testOutputDirectory)
+    mojo.configuration should containSlice("-p", testOutputDirectory + " " + outputDirectory)
 
     mojo.gui = "BIS"
     mojo.configuration should contain ("-gBIS")

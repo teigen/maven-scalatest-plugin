@@ -3,6 +3,7 @@ package org.scalatest.tools.maven;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.scalatest.tools.Runner;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -33,6 +34,12 @@ public abstract class AbstractScalaTestMojo extends AbstractMojo {
      * @required
      */
     File testOutputDirectory;
+
+    /**
+     * @parameter expression="${project.build.outputDirectory}"
+     * @required
+     */
+    File outputDirectory;
 
     /**
      * Adds additional elements to the runpath (Same as passing <code>-p</code>)
@@ -102,7 +109,6 @@ public abstract class AbstractScalaTestMojo extends AbstractMojo {
      * (Same as passing <code>-t</code> to ScalaTest)
      *
      * @parameter expression="${testNG}"
-     * TODO: denne burde være String[] eller en String som parses
      */
     String testNG;
 
@@ -113,7 +119,7 @@ public abstract class AbstractScalaTestMojo extends AbstractMojo {
         classLoader = classLoader();
         String[] configuration = configuration();
         print(configuration);
-        invokeRunner(configuration);
+        Runner.main(configuration);
     }
 
     abstract List<String> additionalConfiguration();
@@ -131,22 +137,6 @@ public abstract class AbstractScalaTestMojo extends AbstractMojo {
         config.addAll(properties());
         config.addAll(runpath());
         return config.toArray(new String[config.size()]);
-    }
-
-    Class<?> getClass(String clazz) throws MojoExecutionException {
-        try {
-            return classLoader.loadClass(clazz);
-        } catch (ClassNotFoundException e) {
-            throw new MojoExecutionException("ScalaTest not found!");
-        }
-    }
-
-    private void invokeRunner(String[] args) throws MojoExecutionException {
-        try {
-            getClass("org.scalatest.tools.Runner").getMethod("main", String[].class).invoke(null, new Object[]{args});
-        } catch (Exception e) {
-            throw new MojoExecutionException("Error invoking scalatest", e);
-        }
     }
 
     private void print(String[] args) {
@@ -215,6 +205,7 @@ public abstract class AbstractScalaTestMojo extends AbstractMojo {
     private List<String> runpath() {
         List<String> parts = new ArrayList<String>();
         parts.add(testOutputDirectory.getAbsolutePath());
+        parts.add(outputDirectory.getAbsolutePath());
         if (additionalRunpaths != null) {
             parts.addAll(Arrays.asList(additionalRunpaths));
         }
