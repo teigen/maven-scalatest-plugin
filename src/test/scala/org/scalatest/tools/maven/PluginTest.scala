@@ -84,6 +84,7 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers {
     mojo.testOutputDirectory = new File(testOutputDirectory)
     mojo.outputDirectory = new File(outputDirectory)
     mojo.scalaTestReportsDirectory = new File(reportsDirectory)
+    mojo.testClasspathElements = new java.util.ArrayList[String]()
     m(mojo)
     mojo.configuration
   }
@@ -92,6 +93,7 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers {
     val mojo = new GuiMojo
     mojo.testOutputDirectory = new File(testOutputDirectory)
     mojo.outputDirectory = new File(outputDirectory)
+    mojo.testClasspathElements = new java.util.ArrayList[String]()
     mojo.configuration should contain ("-g")
     mojo.configuration should containSlice("-p", testOutputDirectory + " " + outputDirectory)
 

@@ -209,10 +209,20 @@ public abstract class AbstractScalaTestMojo extends AbstractMojo {
         if (additionalRunpaths != null) {
             parts.addAll(Arrays.asList(additionalRunpaths));
         }
+        parts.addAll(classpathElements());
         return compoundArg("-p", parts);
     }
 
-
+    private List<String> classpathElements(){
+	    List<String> parts = new ArrayList<String>();
+	    for(String element : testClasspathElements){
+            File file = new File(element);
+            if(file.isFile()){
+                parts.add(file.getAbsolutePath());
+            }
+        }
+		return parts;
+    }
 
     private ClassLoader classLoader() {
         try {
