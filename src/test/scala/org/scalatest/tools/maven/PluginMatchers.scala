@@ -1,8 +1,9 @@
 package org.scalatest.tools.maven
 
-
-import matchers.{Matcher, MatchResult}
-
+import org.scalatest.matchers.{MatchResult, Matcher}
+/**
+ * @author Jon-Anders Teigen
+ */
 trait PluginMatchers {
   def containSlice(slice: String*) = new Matcher[Seq[String]] {
     def apply(seq: Seq[String]) = {

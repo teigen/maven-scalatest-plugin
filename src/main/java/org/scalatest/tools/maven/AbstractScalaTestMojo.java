@@ -1,27 +1,24 @@
 package org.scalatest.tools.maven;
 
 import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.scalatest.tools.Runner;
+import static org.scalatest.tools.maven.MojoUtils.*;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
+import static java.util.Collections.singletonList;
 import java.io.File;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.net.URL;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * @author Jon-Anders Teigen
  * @requiresDependencyResolution test
  */
 public abstract class AbstractScalaTestMojo extends AbstractMojo {
-
     /**
      * @parameter expression="${project.testClasspathElements}"
      * @required
@@ -32,115 +29,99 @@ public abstract class AbstractScalaTestMojo extends AbstractMojo {
     /**
      * @parameter expression="${project.build.testOutputDirectory}"
      * @required
+     * @readOnly
      */
     File testOutputDirectory;
 
     /**
      * @parameter expression="${project.build.outputDirectory}"
      * @required
+     * @readOnly
      */
     File outputDirectory;
 
     /**
-     * Adds additional elements to the runpath (Same as passing <code>-p</code>)
-     *
-     * @parameter
+     * Comma separated list of additional elements to be added
+     * to the scalatest runpath. ${project.build.outputDirectory} and
+     * ${project.build.testOutputDirectory} are included by default
+     * @parameter expression="${runpath}"
      */
-    String[] additionalRunpaths;
+    String runpath;
 
     /**
-     * Comma separated string of suites to run
-     * (Same as passing <code>-s</code> to ScalaTest)
-     *
-     * @parameter expression="${suites}"
+     * Comma separated list of suites to be executed
+     * @parameter expression="${suite}"
      */
     String suites;
 
     /**
-     * Comma separated string of groups to include
-     * (Same as passing <code>-n</code> to ScalaTest)
-     *
-     * @parameter expression="${includes}"
+     * Comma separated list of suites to include
+     * @parameter expression="${include}"
      */
     String includes;
 
     /**
-     * Comma separated string of groups to exclude
-     * (Same as passing <code>-x</code> to ScalaTest)
-     *
-     * @parameter expression="${excludes}"
+     * Comma separated list of suites to exclude
+     * @parameter expression="${exclude}"
      */
     String excludes;
 
     /**
-     * Specify user defined properties
-     * (Same as passing <code>-D&lt;key&gt;=&lt;value&gt;</code> to ScalaTest)
-     *
-     * @parameter TODO: denne burde være String[] eller en String som parses, parser ut både keys og values: -Dproperties=trygve=kul,knoll=tott
+     * Comma separated list of cofiguration parameters to pass to scalatest.
+     * The parameters must be on the format &lt;key&gt;=&lt;value&gt;. E.g <code>foo=bar,monkey=donkey</code>
+     * @parameter expression="${config}"
      */
-    Properties properties;
+    String config;
 
     /**
-     * Set this to 'true' to run suites concurrently
-     * (Same as passing <code>-c</code> to ScalaTest)
-     *
-     * @parameter expression="${concurrent}" default-value="false"
+     * Set to true to run suites concurrently
+     * @parameter expression="${concurrent}"
      */
     boolean concurrent;
 
     /**
-     * Runs comma separated string of suites that are members of given packages
-     * (Same as passing <code>-m</code> to ScalaTest)
-     *
-     * @parameter expression="${members}"
+     * Comma separated list of members to execute
+     * @parameter expression="${member}"
      */
     String members;
 
     /**
-     * Runs comma separated string of suites that match given wildcards
-     * (Same as passing <code>-w</code> to ScalaTest)
-     *
-     * @parameter expression="${wildcards}"
+     * Comma separated list of wildcard suites to execute
+     * @parameter expression="${wildcard}"
      */
     String wildcards;
 
     /**
-     * Comma separated string of TestNG xml files to run
-     * (Same as passing <code>-t</code> to ScalaTest)
-     *
+     * Comma separated list of testNG xml files to execute
      * @parameter expression="${testNG}"
      */
     String testNG;
 
-    private ClassLoader classLoader;
+    /**
+     * Comma separated list of JUnit suites/tests to execute
+     * @parameter expression="${junit}"
+     */
+    String junit;
 
-    @SuppressWarnings("unchecked")
-    void runScalaTest() throws MojoExecutionException, MojoFailureException {
-        classLoader = classLoader();
-        String[] configuration = configuration();
-        print(configuration);
-        Runner.main(configuration);
+    boolean runScalaTest(String[] args) {
+        print(args); // sideeffect!
+        try {
+            return (Boolean) run().invoke(null, new Object[]{args});
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException(e);
+        } catch (InvocationTargetException e) {
+            Throwable target = e.getTargetException();
+            if(target instanceof RuntimeException){
+                throw (RuntimeException)target;
+            } else {
+                throw new IllegalArgumentException(target);
+            }
+        }
     }
 
-    abstract List<String> additionalConfiguration();
-
-    String[] configuration() {
-        List<String> config = new ArrayList<String>();
-        config.addAll(additionalConfiguration());
-        config.addAll(testNGs());
-        config.addAll(wildcards());
-        config.addAll(members());
-        config.addAll(suites());
-        config.addAll(concurrent());
-        config.addAll(excludes());
-        config.addAll(includes());
-        config.addAll(properties());
-        config.addAll(runpath());
-        return config.toArray(new String[config.size()]);
-    }
-
+    // sideeffect!
     private void print(String[] args) {
-        StringBuffer sb = new StringBuffer("org.scalatest.tools.Runner.main(");
+        StringBuffer sb = new StringBuffer("org.scalatest.tools.Runner.run(");
         for (int i = 0; i < args.length; i++) {
             boolean ws = args[i].contains(" ");
             if (ws) {
@@ -158,125 +139,93 @@ public abstract class AbstractScalaTestMojo extends AbstractMojo {
         getLog().info(sb.toString());
     }
 
-
-
-    private List<String> testNGs() {
-        return suiteArg("-t", commaSeparated(testNG));
-    }
-
-    private List<String> wildcards() {
-        return suiteArg("-w", commaSeparated(wildcards));
-    }
-
-    private List<String> members() {
-        return suiteArg("-m", commaSeparated(members));
-    }
-
-    private List<String> suites() {
-        return suiteArg("-s", commaSeparated(suites));
-    }
-
-    private List<String> concurrent() {
-        List<String> args = new ArrayList<String>();
-        if (concurrent) {
-            args.add("-c");
+    private Method run() {
+        try {
+            Class<?> runner = classLoader().loadClass("org.scalatest.tools.Runner");
+            return runner.getMethod("run", String[].class);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException(e);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("scalatest is missing from classpath");
         }
-        return args;
-    }
-
-    private List<String> excludes() {
-        return compoundArg("-x", commaSeparated(excludes));
-    }
-
-    private List<String> includes() {
-        return compoundArg("-n", commaSeparated(includes));
-    }
-
-    private List<String> properties() {
-        List<String> props = new ArrayList<String>();
-        if (properties != null) {
-            for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-                props.add("-D" + entry.getKey() + "=" + entry.getValue());
-            }
-        }
-        return props;
-    }
-
-    private List<String> runpath() {
-        List<String> parts = new ArrayList<String>();
-        parts.add(testOutputDirectory.getAbsolutePath());
-        parts.add(outputDirectory.getAbsolutePath());
-        if (additionalRunpaths != null) {
-            parts.addAll(Arrays.asList(additionalRunpaths));
-        }
-        parts.addAll(classpathElements());
-        return compoundArg("-p", parts);
-    }
-
-    private List<String> classpathElements(){
-	    List<String> parts = new ArrayList<String>();
-	    for(String element : testClasspathElements){
-            File file = new File(element);
-            if(file.isFile()){
-                parts.add(file.getAbsolutePath());
-            }
-        }
-		return parts;
     }
 
     private ClassLoader classLoader() {
         try {
             List<URL> urls = new ArrayList<URL>();
-            for(String element : testClasspathElements){
+            for (String element : testClasspathElements) {
                 File file = new File(element);
-                if(file.exists()){
+                if (file.isFile()) {
                     urls.add(file.toURI().toURL());
                 }
             }
             URL[] u = urls.toArray(new URL[urls.size()]);
-            return new URLClassLoader(u, this.getClass().getClassLoader());
+            return new URLClassLoader(u);
         } catch (MalformedURLException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    static List<String> compoundArg(String name, List<String> params) {
-        List<String> list = new ArrayList<String>();
-        if (params != null) {
-            list.add(name);
-            String prefix = "";
-            String a = "";
-            for (String param : params) {
-                a += prefix;
-                a += param;
-                prefix = " ";
-            }
-            list.add(a);
-        }
-        return list;
+
+    List<String> sharedConfiguration() {
+        return new ArrayList<String>() {{
+            addAll(runpath());
+            addAll(config());
+            addAll(include());
+            addAll(exclude());
+            addAll(concurrent());
+            addAll(suites());
+            addAll(members());
+            addAll(wildcards());
+            addAll(testNG());
+            addAll(junit());
+        }};
     }
 
-    static List<String> suiteArg(String name, List<String> params) {
-        List<String> list = new ArrayList<String>();
-        if (params != null) {
-            for (String param : params) {
-                list.add(name);
-                list.add(param);
-            }
+    private List<String> config() {
+        List<String> c = new ArrayList<String>();
+        for(String pair : splitOnComma(config)){
+            c.add("-D"+pair);
         }
-        return list;
+        return c;
     }
 
-    static List<String> commaSeparated(String cs) {
-        if (cs == null) {
-            return null;
-        } else {
-            List<String> args = new ArrayList<String>();
-            String[] split = cs.split(",");
-            for (String arg : split) {
-                args.add(arg.trim());
-            }
-            return args;
-        }
+    private List<String> runpath() {
+        return compoundArg("-p",
+                outputDirectory.getAbsolutePath(),
+                testOutputDirectory.getAbsolutePath(),
+                runpath);
+    }
+
+    private List<String> include() {
+        return compoundArg("-n", includes);
+    }
+
+    private List<String> exclude() {
+        return compoundArg("-l", excludes);
+    }
+
+    private List<String> concurrent() {
+        return concurrent ? singletonList("-c") : Collections.<String>emptyList();
+    }
+
+    private List<String> suites() {
+        return suiteArg("-s", suites);
+    }
+
+    private List<String> members() {
+        return suiteArg("-m", members);
+    }
+
+    private List<String> wildcards() {
+        return suiteArg("-w", wildcards);
+    }
+
+    private List<String> testNG() {
+        return suiteArg("-t", testNG);
+    }
+
+    private List<String> junit() {
+        return suiteArg("-j", junit);
     }
 }

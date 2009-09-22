@@ -2,179 +2,130 @@ package org.scalatest.tools.maven;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import static org.scalatest.tools.maven.MojoUtils.*;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import static java.util.Collections.singletonList;
 import java.util.List;
 
-
 /**
- * Run tests using ScalaTest
- *
  * @author Jon-Anders Teigen
  * @goal test
  * @phase test
  */
 public class TestMojo extends AbstractScalaTestMojo {
 
-
     /**
      * @parameter expression="${project.build.directory}/scalatest-reports"
      * @required
      */
-    File scalaTestReportsDirectory;
+    File reportsDirectory;
 
     /**
-     * @parameter expression="${project.build.directory}/surefire-reports"
-     * @required
-     */
-    File surefireReportsDirectory;
-
-    /**
-     * Set this to 'true' to skip running tests
-     *
+     * Set to true to skip execution of tests.
      * @parameter expression="${skipTests}"
      */
     boolean skipTests;
 
     /**
-     * Enables and optionally configures file reporters for given files.
-     * Either enable it for a given file with default configuration, or provide reporter configuration characters and the filename separated by whitespace
-     * (Same as passing <code>-f<code> to ScalaTest)
-     *
-     * @parameter
+     * Set to true to avoid failing the build when tests fail
+     * @parameter expression="${maven.test.failure.ignore}"
      */
-    String[] fileReporters;
+    boolean testFailureIgnore;
 
     /**
-     * @parameter expression="${surefireReports}" default-value="true"
+     * Comma separated list of filereporters. A filereporter consists of an optional
+     * configuration and a mandatory filename, separated by a whitespace. E.g <code>all.txt,XE ignored_and_pending.txt</code>
+     * For more info on configuring reporters, see the scalatest documentation.
+     * @parameter expression="${filereports}"
      */
-    boolean surefireReports;
+    String filereports;
 
     /**
-     * configures the standard out reporter with the reporter configuration characters
-     * (Same as passing <code>-o</code> to ScalaTest)
-     *
+     * Comma separated list of reporters. A reporter consist of an optional configuration
+     * and a mandatory reporter classname, separated by whitespace. The reporter classname
+     * must be the fully qualified name of a class extending <code>org.scalatest.Reporter</code>
+     * E.g <code>C my.SuccessReporter,my.EverythingReporter</code>
+     * For more info on configuring reporters, see the scalatest documentation.
+     * @parameter expression="${reporters}"
+     */
+    String reporters;
+
+    /**
+     * Comma separated list of xmlreports. A xmlreport consists of an optional configuration
+     * and a mandatory directory for the xmlfiles, separated by whitespace.
+     * For more info on configuring reporters, see the scalatest documentation.
+     * @parameter expression="${xmlreports}"
+     */
+    String xmlreports;
+
+    /**
+     * Comma separated list of htmlreports. A html reports consists of an optional configuratio
+     * and a mandatory file for the report, separated by whitespace.
+     * For more info on configuring reporters, see the scalatest documentation.
+     * @parameter expression="${htmlreports}"
+     */
+    String htmlreports;
+
+    /**
+     * Configuration for logging to stdout. (This logger is always enabled)
+     * For more info on configuring reporters, see the scalatest documentation.
      * @parameter expression="${stdout}"
      */
     String stdout;
 
     /**
-     * enables and configures the standard error reporter with the reporter configuration characters
-     * (Same as passing <code>-e</code> to ScalaTest)
-     *
+     * Configuration for logging to stderr. It is disabled by default, but will be enabled
+     * when configured. Empty configuration just means enable.
+     * For more info on configuring reporters, see the scalatest documentation.
      * @parameter expression="${stderr}"
-     * TODO: Er denne nødvendig?
      */
     String stderr;
 
-    /**
-     * enables and optionally configures reporterclasses.
-     * Either list the fully qualified reporterclass, or provide reporter configuration characters and the fully qualified reporter class separated by whitespace
-     * (Same as passing <code>-r</code> to ScalaTest)
-     *
-     * @parameter
-     */
-    String[] reporters;
-
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (skipTests) {
-            getLog().info("Skipping tests!");
+            getLog().info("Tests are skipped.");
         } else {
-            if(fileReporters != null){
-                create(scalaTestReportsDirectory);
-            }
-            if(surefireReports){
-                SurefireReporterConfig.reportsDirectory = surefireReportsDirectory;
-                create(surefireReportsDirectory);
-            }
-            runScalaTest();
-            if (Result.isFail()) {
+            if (!runScalaTest(configuration()) && !testFailureIgnore) {
                 throw new MojoFailureException("There are test failures");
             }
         }
     }
 
-    private void create(File directory) throws MojoExecutionException {
-        if(!directory.exists() && !directory.mkdirs()){
-            throw new MojoExecutionException("Cannot create " + directory);
-        }
+    String[] configuration() {
+        return concat(
+                sharedConfiguration(),
+                stdout(),
+                stderr(),
+                filereports(),
+                reporters(),
+                xmlreports(),
+                htmlreports()
+        );
     }
 
-    List<String> additionalConfiguration() {
-        List<String> args = new ArrayList<String>();
-        args.addAll(reporters());
-        return args;
+    private List<String> stdout() {
+        return singletonList(stdout == null ? "-o" : "-o" + stdout);
     }
 
+    private List<String> stderr() {
+        return stderr == null ? Collections.<String>emptyList() : singletonList("-e" + stderr);
+    }
+
+    private List<String> filereports() {
+        return reporterArg("-f", filereports, fileRelativeTo(reportsDirectory));
+    }
 
     private List<String> reporters() {
-        List<String> args = new ArrayList<String>();
-        args.addAll(stdOutReporter());
-        args.addAll(stdErrReporter());
-        args.addAll(reporterClasses());
-        args.addAll(fileReporters());
-        return args;
+        return reporterArg("-r", reporters, passThrough);
     }
 
-    private List<String> stdOutReporter() {
-        List<String> args = new ArrayList<String>();
-        if (stdout == null) {
-            args.add("-o");
-        } else {
-            args.add("-o" + stdout);
-        }
-        return args;
+    private List<String> xmlreports(){
+        return reporterArg("-u", xmlreports, dirRelativeTo(reportsDirectory));
     }
 
-    private List<String> stdErrReporter() {
-        List<String> args = new ArrayList<String>();
-        if (stderr != null) {
-            args.add("-e" + stderr);
-        }
-        return args;
+    private List<String> htmlreports(){
+        return reporterArg("-h", htmlreports, fileRelativeTo(reportsDirectory));
     }
-
-    private List<String> reporterClasses() {
-        List<String> parts = new ArrayList<String>();
-        if (reporters != null) {
-            parts.addAll(Arrays.asList(reporters));
-        }
-        parts.add(FailReporter.class.getName());
-        if(surefireReports){
-            parts.add(SurefireReporter.class.getName());
-        }
-
-        List<String> args = new ArrayList<String>();
-        for (String reporter : parts) {
-            String[] split = reporter.split("\\s");
-            if (split.length == 1) {
-                args.add("-r");
-                args.add(split[0]);
-            } else {
-                args.add("-r" + split[0]);
-                args.add(split[1]);
-            }
-        }
-        return args;
-    }
-
-    private List<String> fileReporters() {
-        List<String> args = new ArrayList<String>();
-        if (fileReporters != null) {
-            for (String reporter : fileReporters) {
-                String[] split = reporter.split("\\s");
-                if (split.length == 1) {
-                    args.add("-f");
-                    args.add(new File(scalaTestReportsDirectory, split[0]).getAbsolutePath());
-                } else {
-                    args.add("-f" + split[0]);
-                    args.add(new File(scalaTestReportsDirectory, split[1]).getAbsolutePath());
-                }
-            }
-        }
-        return args;
-    }
-
 }
