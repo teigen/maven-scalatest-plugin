@@ -4,12 +4,12 @@ import java.io.File
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnit3Suite
 import java.util.ArrayList
-import org.scalatest.BeforeAndAfter
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
 
 /**
  * @author Jon -Anders Teigen
  */
-class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers with BeforeAndAfter {
+class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers with BeforeAndAfterAll {
   val tmpDir = new File(System.getProperty("java.io.tmpdir"))
   val reportsDirectory = new File(tmpDir, "reportsDirectory")
   val baseDir = new File(tmpDir, "basedir");
