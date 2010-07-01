@@ -5,7 +5,7 @@
   <groupId>com.jteigen</groupId>
   <artifactId>maven-scalatest-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.1-SNAPSHOT</version>
   <name>Maven ScalaTest Plugin</name>
 
   <repositories>
@@ -29,13 +29,13 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest</artifactId>
-      <version>0.9.5</version>
+      <version>1.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <version>2.7.5</version>
+      <version>2.7.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
