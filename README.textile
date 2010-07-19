@@ -1,0 +1,59 @@
+A "Maven":http://maven.apache.org/ Plugin for "Scalatest":http://scalatest.org/
+
+h2. Building and Installing
+
+<pre>
+mvn clean install	
+</pre>
+
+h2. Usage
+
+<pre>
+	<project>
+	  ...
+	  <build>
+	    <!-- To define the plugin version in your parent POM -->
+	    <pluginManagement>
+	      <plugins>
+	        <plugin>
+	          <groupId>com.jteigen</groupId>
+	          <artifactId>maven-scalatest-plugin</artifactId>
+	          <version>1.1-SNAPSHOT</version>
+	        </plugin>
+	        ...
+	      </plugins>
+	    </pluginManagement>
+	    <!-- To use the plugin goals in your POM or parent POM -->
+	    <plugins>
+	      <plugin>
+	        <groupId>com.jteigen</groupId>
+	        <artifactId>maven-scalatest-plugin</artifactId>
+	        <version>1.1-SNAPSHOT</version>
+	      </plugin>
+	      ...
+	    </plugins>
+	  </build>
+	  ...
+	</project>	
+</pre>
+
+To run your scalatests (in your project)
+<pre>
+mvn scalatest:test
+</pre>
+
+To start the scalatest gui (in your project)
+<pre>
+mvn scalatest:gui	
+</pre>
+
+h2. Configuration
+
+To generate the configuration documentation, please run
+<pre>
+mvn site:site
+
+open target/site/plugin-info.html
+</pre>
+		
+
