@@ -1,12 +1,23 @@
 A "Maven":http://maven.apache.org/ Plugin for "Scalatest":http://scalatest.org/
 
+h2. Overview
+
+maven-scalatest-plugin is a Maven plugin that integrates <a href="http://www.scalatest.org/">ScalaTest</a> functionality into Maven.
+
 h2. Building and Installing
 
+maven-scalatest-plugin is not available from the standard Maven repositories. To install it,
+you should checkout the code from github and install it: the "install" target will add the 
+plugin to your local Maven repository.
+
 <pre>
-mvn clean install	
+	git clone http://github.com/teigen/maven-scalatest-plugin.git
+	cd maven-scalatest-plugin && mvn clean install	
 </pre>
 
 h2. Usage
+
+Add the following to your project's pom.xml file.
 
 <pre>
 	<project>
@@ -46,6 +57,11 @@ To start the scalatest gui (in your project)
 <pre>
 mvn scalatest:gui	
 </pre>
+
+If you want to run a particular suite of tests (in your project):
+<pre>
+mvn scalatest:test -Dsuite=mypack.MySuit
+<pre>
 
 h2. Configuration
 
