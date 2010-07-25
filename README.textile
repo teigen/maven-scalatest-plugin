@@ -61,7 +61,7 @@ mvn scalatest:gui
 If you want to run a particular suite of tests (in your project):
 <pre>
 mvn scalatest:test -Dsuite=mypack.MySuit
-<pre>
+</pre>
 
 h2. Configuration
 
