@@ -1,5 +1,9 @@
 A "Maven":http://maven.apache.org/ Plugin for "Scalatest":http://scalatest.org/
 
+NOTE: this plugin is currently being "intregrated into ScalaTest":http://groups.google.com/group/scalatest-users/browse_frm/thread/3a03e3e92eb4d221
+You can track the progress at "Sean Griffins repository":http://scalatest.googlecode.com/svn/branches/trenchguinea/maven-scalatest-plugin/
+Use Seans fork and not this version!
+
 h2. Overview
 
 maven-scalatest-plugin is a Maven plugin that integrates <a href="http://www.scalatest.org/">ScalaTest</a> functionality into Maven.
